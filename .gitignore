@@ -1,0 +1,5 @@
+sqlparser.exe
+test_runner.exe
+*.o
+tests/tmp*
+
