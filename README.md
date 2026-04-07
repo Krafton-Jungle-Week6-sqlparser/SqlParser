@@ -194,3 +194,8 @@ SELECT name, age FROM users;
 - 여러 SQL 문장 연속 실행
 - 실행 로그 출력
 - 더 풍부한 오류 위치 표시
+
+## 14. 추가 문서
+
+- 파일별 코드 설명서: [CODE_GUIDE.md](./CODE_GUIDE.md)
+- 구현 계획서 PDF: [sql_processor_plan.pdf](./sql_processor_plan.pdf)
