@@ -1,8 +1,8 @@
 // lexer는 SQL 원문을 토큰 목록으로 바꿔 주는 단계다.
-#include "lexer.h"
+#include "sqlparser/sql/lexer.h"
 
 // 문자열 복사 같은 유틸 함수를 사용한다.
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 // 문자 종류 판별을 위해 포함한다.
 #include <ctype.h>

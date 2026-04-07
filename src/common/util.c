@@ -1,5 +1,5 @@
 // util.h에 선언된 공통 함수들의 실제 구현 파일이다.
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 // 공백 판별과 소문자 변환 함수를 쓰기 위해 포함한다.
 #include <ctype.h>

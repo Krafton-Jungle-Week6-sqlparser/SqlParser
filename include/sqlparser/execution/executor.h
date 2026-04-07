@@ -2,7 +2,7 @@
 #ifndef EXECUTOR_H
 #define EXECUTOR_H
 
-#include "ast.h"
+#include "sqlparser/sql/ast.h"
 
 #include <stdio.h>
 

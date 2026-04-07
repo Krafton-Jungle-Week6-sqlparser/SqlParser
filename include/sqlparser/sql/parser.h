@@ -2,8 +2,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "ast.h"
-#include "lexer.h"
+#include "sqlparser/sql/ast.h"
+#include "sqlparser/sql/lexer.h"
 
 // parser가 문장을 해석한 뒤 돌려주는 결과 구조체다.
 typedef struct {

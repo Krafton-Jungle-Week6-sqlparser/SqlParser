@@ -1,13 +1,13 @@
 // AST 구조체를 해제하기 위한 선언이다.
-#include "ast.h"
+#include "sqlparser/sql/ast.h"
 // 파싱된 SQL을 실제로 실행하기 위한 선언이다.
-#include "executor.h"
+#include "sqlparser/execution/executor.h"
 // SQL 문자열을 토큰으로 나누기 위한 선언이다.
-#include "lexer.h"
+#include "sqlparser/sql/lexer.h"
 // 토큰 목록을 INSERT / SELECT 구조로 해석하기 위한 선언이다.
-#include "parser.h"
+#include "sqlparser/sql/parser.h"
 // 파일 읽기 같은 공통 유틸 함수를 쓰기 위한 선언이다.
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 // 표준 입출력 함수를 사용한다.
 #include <stdio.h>

@@ -1,5 +1,5 @@
 // AST 구조체의 동적 메모리를 해제하는 구현 파일이다.
-#include "ast.h"
+#include "sqlparser/sql/ast.h"
 
 // free 함수를 사용하기 위해 포함한다.
 #include <stdlib.h>

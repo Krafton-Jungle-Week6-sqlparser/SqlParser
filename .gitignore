@@ -1,5 +1,2 @@
-sqlparser.exe
-test_runner.exe
+build/
 *.o
-tests/tmp*
-

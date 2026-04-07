@@ -2,7 +2,7 @@
 #ifndef SCHEMA_H
 #define SCHEMA_H
 
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 // 테이블 하나의 스키마 정보를 담는 구조체다.
 typedef struct {

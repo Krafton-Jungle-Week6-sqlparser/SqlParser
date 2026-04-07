@@ -1,12 +1,12 @@
 // executor는 파싱된 SQL 문장을 실제 파일 읽기/쓰기 동작으로 바꾼다.
-#include "executor.h"
+#include "sqlparser/execution/executor.h"
 
 // 스키마 검증을 위해 사용한다.
-#include "schema.h"
+#include "sqlparser/storage/schema.h"
 // CSV append와 CSV 파싱 함수를 사용한다.
-#include "storage.h"
+#include "sqlparser/storage/storage.h"
 // 문자열 리스트와 경로 유틸을 사용한다.
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>

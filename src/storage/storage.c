@@ -1,5 +1,5 @@
 // storage.c는 CSV 파싱과 CSV 파일 append를 담당한다.
-#include "storage.h"
+#include "sqlparser/storage/storage.h"
 
 // 파일 입출력을 위해 포함한다.
 #include <stdio.h>

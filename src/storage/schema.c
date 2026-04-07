@@ -1,8 +1,8 @@
 // schema.c는 meta 파일과 CSV 헤더를 읽어 테이블 구조를 검증한다.
-#include "schema.h"
+#include "sqlparser/storage/schema.h"
 
 // CSV 한 줄을 컬럼 목록으로 파싱하기 위해 사용한다.
-#include "storage.h"
+#include "sqlparser/storage/storage.h"
 
 // 파일 읽기와 메시지 생성을 위해 포함한다.
 #include <stdio.h>

@@ -1,10 +1,10 @@
 // 테스트 러너는 각 모듈이 예상대로 동작하는지 자동으로 검증한다.
-#include "executor.h"
-#include "lexer.h"
-#include "parser.h"
-#include "schema.h"
-#include "storage.h"
-#include "util.h"
+#include "sqlparser/execution/executor.h"
+#include "sqlparser/sql/lexer.h"
+#include "sqlparser/sql/parser.h"
+#include "sqlparser/storage/schema.h"
+#include "sqlparser/storage/storage.h"
+#include "sqlparser/common/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,9 +66,13 @@ static int create_test_dirs(char *root, size_t root_size, char *schema_dir, size
     temp_dir_counter++;
 
     // tests/tmp_<time>_<counter> 형식의 임시 디렉터리 이름을 만든다.
-    snprintf(root, root_size, "tests/tmp_%ld_%d", suffix, temp_dir_counter);
+    snprintf(root, root_size, "build/tests/tmp_%ld_%d", suffix, temp_dir_counter);
     build_child_path(schema_dir, schema_size, root, "schema");
     build_child_path(data_dir, data_size, root, "data");
+
+    // build 와 build/tests 가 없을 수 있으므로 먼저 만든다.
+    MAKE_DIR("build");
+    MAKE_DIR("build/tests");
 
     // 루트, schema, data 디렉터리를 순서대로 만든다.
     if (MAKE_DIR(root) != 0) {

@@ -2,7 +2,7 @@
 #ifndef AST_H
 #define AST_H
 
-#include "util.h"
+#include "sqlparser/common/util.h"
 
 // 현재 프로젝트는 INSERT와 SELECT 두 종류의 문장만 지원한다.
 typedef enum {

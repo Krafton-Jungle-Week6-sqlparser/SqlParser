@@ -1,19 +1,31 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -Isrc
+CFLAGS = -Wall -Wextra -std=c11 -Iinclude
 
-SRC_COMMON = src/util.c src/schema.c src/storage.c src/ast.c src/lexer.c src/parser.c src/executor.c
+BUILD_DIR = build
+BIN_DIR = $(BUILD_DIR)/bin
+
+SRC_COMMON = src/common/util.c src/storage/schema.c src/storage/storage.c src/sql/ast.c src/sql/lexer.c src/sql/parser.c src/execution/executor.c
+APP_SOURCES = src/app/main.c $(SRC_COMMON)
 TEST_SOURCES = tests/test_runner.c $(SRC_COMMON)
 
-all: sqlparser.exe
+APP_BIN = $(BIN_DIR)/sqlparser.exe
+TEST_BIN = $(BIN_DIR)/test_runner.exe
 
-sqlparser.exe: src/main.c $(SRC_COMMON)
-	$(CC) $(CFLAGS) -o $@ src/main.c $(SRC_COMMON)
+all: $(APP_BIN)
 
-test_runner.exe: $(TEST_SOURCES)
+$(APP_BIN): $(APP_SOURCES)
+	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+	if not exist $(BIN_DIR) mkdir $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $(APP_SOURCES)
+
+$(TEST_BIN): $(TEST_SOURCES)
+	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+	if not exist $(BIN_DIR) mkdir $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $(TEST_SOURCES)
 
-test: test_runner.exe
-	.\test_runner.exe
+test: $(TEST_BIN)
+	if not exist $(BUILD_DIR)\tests mkdir $(BUILD_DIR)\tests
+	.\$(TEST_BIN)
 
 clean:
-	del /Q sqlparser.exe test_runner.exe *.o 2>NUL || exit 0
+	if exist $(BUILD_DIR) rmdir /S /Q $(BUILD_DIR)

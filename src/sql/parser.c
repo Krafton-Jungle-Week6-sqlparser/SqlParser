@@ -1,5 +1,5 @@
 // parser는 lexer가 만든 토큰 목록을 SQL 의미 구조로 해석한다.
-#include "parser.h"
+#include "sqlparser/sql/parser.h"
 
 // 에러 메시지 생성을 위해 포함한다.
 #include <stdio.h>
