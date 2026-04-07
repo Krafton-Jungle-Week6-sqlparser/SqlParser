@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void append_character(char **buffer, size_t *length, size_t *capacity, char value) {
+static int append_character(char **buffer, size_t *length, size_t *capacity, char value) {
     char *new_buffer;
     size_t new_capacity;
 
@@ -12,7 +12,7 @@ static void append_character(char **buffer, size_t *length, size_t *capacity, ch
         new_capacity = *capacity == 0 ? 16 : *capacity * 2;
         new_buffer = (char *)realloc(*buffer, new_capacity);
         if (new_buffer == NULL) {
-            return;
+            return 0;
         }
 
         *buffer = new_buffer;
@@ -22,6 +22,7 @@ static void append_character(char **buffer, size_t *length, size_t *capacity, ch
     (*buffer)[*length] = value;
     (*length)++;
     (*buffer)[*length] = '\0';
+    return 1;
 }
 
 int csv_parse_line(const char *line, StringList *fields, char *error, size_t error_size) {
@@ -45,7 +46,11 @@ int csv_parse_line(const char *line, StringList *fields, char *error, size_t err
         if (in_quotes) {
             if (current == '"') {
                 if (cursor[1] == '"') {
-                    append_character(&buffer, &length, &capacity, '"');
+                    if (!append_character(&buffer, &length, &capacity, '"')) {
+                        free(buffer);
+                        snprintf(error, error_size, "out of memory while parsing CSV");
+                        return 0;
+                    }
                     cursor++;
                 } else {
                     in_quotes = 0;
@@ -56,7 +61,11 @@ int csv_parse_line(const char *line, StringList *fields, char *error, size_t err
                 snprintf(error, error_size, "unterminated quoted CSV field");
                 return 0;
             } else {
-                append_character(&buffer, &length, &capacity, current);
+                if (!append_character(&buffer, &length, &capacity, current)) {
+                    free(buffer);
+                    snprintf(error, error_size, "out of memory while parsing CSV");
+                    return 0;
+                }
             }
             continue;
         }
@@ -102,7 +111,11 @@ int csv_parse_line(const char *line, StringList *fields, char *error, size_t err
         }
 
         if (current != '\r' && current != '\n') {
-            append_character(&buffer, &length, &capacity, current);
+            if (!append_character(&buffer, &length, &capacity, current)) {
+                free(buffer);
+                snprintf(error, error_size, "out of memory while parsing CSV");
+                return 0;
+            }
         }
     }
 
@@ -159,3 +172,77 @@ char *csv_escape_field(const char *value) {
     return escaped;
 }
 
+StorageResult append_row_csv(const char *data_dir, const char *table_name, const StringList *row_values) {
+    StorageResult result = {0};
+    char *path;
+    FILE *file;
+    int index;
+    long file_size;
+    int last_character;
+
+    path = build_path(data_dir, table_name, ".csv");
+    if (path == NULL) {
+        snprintf(result.message, sizeof(result.message), "out of memory while building table path");
+        return result;
+    }
+
+    file = fopen(path, "r+b");
+    free(path);
+    if (file == NULL) {
+        snprintf(result.message, sizeof(result.message), "failed to open table file for append");
+        return result;
+    }
+
+    if (fseek(file, 0, SEEK_END) != 0) {
+        fclose(file);
+        snprintf(result.message, sizeof(result.message), "failed to seek table file");
+        return result;
+    }
+
+    file_size = ftell(file);
+    if (file_size < 0) {
+        fclose(file);
+        snprintf(result.message, sizeof(result.message), "failed to measure table file");
+        return result;
+    }
+
+    if (file_size > 0) {
+        if (fseek(file, -1L, SEEK_END) != 0) {
+            fclose(file);
+            snprintf(result.message, sizeof(result.message), "failed to inspect table file");
+            return result;
+        }
+
+        last_character = fgetc(file);
+        if (fseek(file, 0, SEEK_END) != 0) {
+            fclose(file);
+            snprintf(result.message, sizeof(result.message), "failed to rewind table file");
+            return result;
+        }
+
+        if (last_character != '\n') {
+            fputc('\n', file);
+        }
+    }
+
+    for (index = 0; index < row_values->count; index++) {
+        char *escaped = csv_escape_field(row_values->items[index]);
+        if (escaped == NULL) {
+            fclose(file);
+            snprintf(result.message, sizeof(result.message), "out of memory while writing CSV row");
+            return result;
+        }
+
+        if (index > 0) {
+            fputc(',', file);
+        }
+        fputs(escaped, file);
+        free(escaped);
+    }
+
+    fclose(file);
+    result.ok = 1;
+    result.affected_rows = 1;
+    snprintf(result.message, sizeof(result.message), "INSERT 1");
+    return result;
+}
