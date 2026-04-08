@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1120" viewBox="0 0 1500 1120" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1620" height="1120" viewBox="0 0 1620 1120" role="img" aria-labelledby="title desc">
   <title id="title">SqlParser 기능 구조도</title>
   <desc id="desc">SqlParser 프로젝트를 입력, SQL 해석, 실행, 파일 저장, 테스트 검증으로 나눠 보여주는 기능 구조도.</desc>
   <defs>
@@ -29,14 +29,18 @@
     </style>
   </defs>
 
-  <rect x="0" y="0" width="1500" height="1120" fill="url(#bg)" />
+  <rect x="0" y="0" width="1620" height="1120" fill="url(#bg)" />
+  <g transform="translate(24 16) scale(1.08)">
 
   <text class="title" x="750" y="54" text-anchor="middle">SqlParser 기능 구조도</text>
   <text class="subtitle" x="750" y="84" text-anchor="middle">입력 -> SQL 해석 -> 실행 -> 파일 저장 -> 테스트 검증 흐름으로 읽는 프로젝트 개요</text>
 
   <rect class="lane" x="40" y="130" width="230" height="830" />
   <text class="lane-title" x="65" y="170">1. 입력</text>
-  <text class="lane-note" x="65" y="196">프로그램을 시작하고 SQL 파일을 읽습니다.</text>
+  <text class="lane-note" x="65" y="196">
+    <tspan x="65" dy="0">프로그램을 시작하고</tspan>
+    <tspan x="65" dy="18">SQL 파일을 읽습니다.</tspan>
+  </text>
 
   <rect class="input" x="60" y="240" width="190" height="150" />
   <text class="card-title" x="78" y="275">CLI 진입점</text>
@@ -54,15 +58,21 @@
 
   <rect class="hint" x="60" y="620" width="190" height="190" />
   <text class="card-title" x="78" y="655">입력 예시</text>
-  <text class="card-body" x="78" y="683">예를 들어 아래 SQL 을 읽습니다.</text>
-  <text class="code" x="78" y="713">INSERT INTO users (...);</text>
-  <text class="card-body" x="78" y="741">또는</text>
-  <text class="code" x="78" y="769">SELECT name</text>
-  <text class="code" x="78" y="793">FROM users;</text>
+  <text class="card-body" x="78" y="683">
+    <tspan x="78" dy="0">예를 들어 아래</tspan>
+    <tspan x="78" dy="18">SQL 을 읽습니다.</tspan>
+  </text>
+  <text class="code" x="78" y="728">INSERT INTO users (...);</text>
+  <text class="card-body" x="78" y="752">또는</text>
+  <text class="code" x="78" y="780">SELECT name</text>
+  <text class="code" x="78" y="804">FROM users;</text>
 
   <rect class="lane" x="290" y="130" width="250" height="830" />
   <text class="lane-title" x="315" y="170">2. SQL 해석</text>
-  <text class="lane-note" x="315" y="196">원문 SQL 을 구조화된 명령으로 바꿉니다.</text>
+  <text class="lane-note" x="315" y="196">
+    <tspan x="315" dy="0">원문 SQL 을 구조화된</tspan>
+    <tspan x="315" dy="18">명령으로 바꿉니다.</tspan>
+  </text>
 
   <rect class="analysis" x="315" y="240" width="200" height="155" />
   <text class="card-title" x="333" y="275">Lexer</text>
@@ -169,8 +179,5 @@
   <path class="arrow" d="M 720 600 C 720 614, 720 621, 720 635" />
   <path class="arrow" d="M 1030 395 C 1030 409, 1030 416, 1030 430" />
 
-  <rect class="hint" x="380" y="990" width="740" height="105" />
-  <text class="card-title" x="405" y="1025">프로젝트 요약</text>
-  <text class="small" x="405" y="1050">main.c 가 전체 파이프라인을 연결하고, SQL 은 lexer 와 parser 를 거쳐 구조화됩니다.</text>
-  <text class="small" x="405" y="1074">executor 가 INSERT 와 SELECT 를 처리하고, storage 와 tests 가 파일 규칙과 동작을 검증합니다.</text>
+  </g>
 </svg>
