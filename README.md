@@ -123,7 +123,7 @@ C 언어로 구현한 파일 기반 SQL 처리기입니다.
 프로그램의 시작점입니다.
 
 - 명령행 인자 확인
-- SQL 파일 읽기
+- SQL 파일 또는 직접 입력한 SQL 문장 읽기
 - lexer 호출
 - parser 호출
 - executor 호출
@@ -284,6 +284,22 @@ mingw32-make test
 .\build\bin\sqlparser.exe .\examples\select_name_age.sql
 .\build\bin\sqlparser.exe .\examples\select_all_users.sql
 ```
+
+SQL 문장을 직접 인자로 넘겨 실행할 수도 있습니다.
+
+```powershell
+.\build\bin\sqlparser.exe "SELECT * FROM users;"
+.\build\bin\sqlparser.exe "SELECT name, age FROM users;"
+.\build\bin\sqlparser.exe "INSERT INTO users (id, name, age) VALUES (1, 'kim', 20);"
+```
+
+인자를 여러 개로 나눠 넘기면 공백으로 다시 합쳐 하나의 SQL 문장으로 처리합니다.
+
+```powershell
+.\build\bin\sqlparser.exe SELECT name, age FROM users;
+```
+
+다만 `*` 문자는 셸이 먼저 해석할 수 있으므로 `SELECT *` 형태는 따옴표로 감싸서 실행하는 것이 안전합니다.
 
 ## 테스트 방법
 
