@@ -127,7 +127,10 @@
 
   <rect class="lane" x="900" y="130" width="260" height="830" />
   <text class="lane-title" x="925" y="170">4. 파일 저장</text>
-  <text class="lane-note" x="925" y="196">테이블 규칙과 CSV 형식을 관리합니다.</text>
+  <text class="lane-note" x="925" y="196">
+    <tspan x="925" dy="0">테이블 규칙과</tspan>
+    <tspan x="925" dy="18">CSV 형식을 관리합니다.</tspan>
+  </text>
 
   <rect class="storage" x="925" y="240" width="210" height="155" />
   <text class="card-title" x="943" y="275">스키마 규칙</text>
@@ -153,7 +156,10 @@
 
   <rect class="lane" x="1180" y="130" width="280" height="830" />
   <text class="lane-title" x="1205" y="170">5. 테스트 검증</text>
-  <text class="lane-note" x="1205" y="196">전체 흐름이 올바른지 자동으로 확인합니다.</text>
+  <text class="lane-note" x="1205" y="196">
+    <tspan x="1205" dy="0">전체 흐름이 올바른지</tspan>
+    <tspan x="1205" dy="18">자동으로 확인합니다.</tspan>
+  </text>
 
   <rect class="test" x="1205" y="240" width="230" height="205" />
   <text class="card-title" x="1223" y="275">테스트 러너</text>
