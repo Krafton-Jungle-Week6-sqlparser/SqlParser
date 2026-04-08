@@ -151,6 +151,25 @@ static void test_parser_select(void) {
     free_tokens(&tokens);
 }
 
+static void test_parser_utf8_identifiers(void) {
+    TokenArray tokens = {0};
+    ParseResult result;
+    char error[256];
+
+    // 한글 테이블명과 컬럼명도 식별자로 읽을 수 있어야 한다.
+    expect_true(lex_sql("SELECT 학과, 이름 FROM 학생;", &tokens, error, sizeof(error)), "lexer parses UTF-8 identifiers");
+    result = parse_statement(&tokens);
+    expect_true(result.ok, "parser accepts UTF-8 identifiers");
+    if (result.ok) {
+        expect_true(strcmp(result.statement.as.select_statement.table_name, "학생") == 0, "parser reads UTF-8 table name");
+        expect_true(result.statement.as.select_statement.columns.count == 2, "parser reads UTF-8 column count");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[0], "학과") == 0, "parser reads first UTF-8 column");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[1], "이름") == 0, "parser reads second UTF-8 column");
+        free_statement(&result.statement);
+    }
+    free_tokens(&tokens);
+}
+
 static void test_parser_error(void) {
     TokenArray tokens = {0};
     ParseResult result;
@@ -306,6 +325,7 @@ int main(void) {
     // parser 관련 테스트들이다.
     test_parser_insert();
     test_parser_select();
+    test_parser_utf8_identifiers();
     test_parser_error();
     // schema, executor, CSV 저장 테스트들이다.
     test_schema_loading();

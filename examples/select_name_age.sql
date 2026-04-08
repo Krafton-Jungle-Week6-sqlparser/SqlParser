@@ -1,2 +1,2 @@
-SELECT name, age FROM users;
+SELECT 이름, 나이 FROM 학생;
 
