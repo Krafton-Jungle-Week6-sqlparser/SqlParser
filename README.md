@@ -238,13 +238,27 @@ INSERT INTO users (id, name, age) VALUES (1, 'kim', 20);
 
 ## 시퀀스 다이어그램
 
-세부 흐름을 그림으로 보고 싶다면 아래 다이어그램을 보면 됩니다.
+README에서 바로 흐름을 볼 수 있도록 다이어그램을 본문에 넣었습니다.
 
-- 전체 실행 흐름: [docs/diagrams/code-guide-sequence-01-overall.svg](./docs/diagrams/code-guide-sequence-01-overall.svg)
-- SQL 파싱 흐름: [docs/diagrams/code-guide-sequence-02-parsing.svg](./docs/diagrams/code-guide-sequence-02-parsing.svg)
-- INSERT 실행 흐름: [docs/diagrams/code-guide-sequence-03-insert.svg](./docs/diagrams/code-guide-sequence-03-insert.svg)
-- SELECT 실행 흐름: [docs/diagrams/code-guide-sequence-04-select.svg](./docs/diagrams/code-guide-sequence-04-select.svg)
-- 테스트 실행 흐름: [docs/diagrams/code-guide-sequence-05-tests.svg](./docs/diagrams/code-guide-sequence-05-tests.svg)
+### 전체 실행 흐름
+
+![전체 실행 흐름](./docs/diagrams/code-guide-sequence-01-overall.svg)
+
+### SQL 파싱 흐름
+
+![SQL 파싱 흐름](./docs/diagrams/code-guide-sequence-02-parsing.svg)
+
+### INSERT 실행 흐름
+
+![INSERT 실행 흐름](./docs/diagrams/code-guide-sequence-03-insert.svg)
+
+### SELECT 실행 흐름
+
+![SELECT 실행 흐름](./docs/diagrams/code-guide-sequence-04-select.svg)
+
+### 테스트 실행 흐름
+
+![테스트 실행 흐름](./docs/diagrams/code-guide-sequence-05-tests.svg)
 
 ## 테이블 존재 규칙
 
