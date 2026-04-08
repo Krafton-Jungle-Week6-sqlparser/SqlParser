@@ -1,40 +1,37 @@
 # SqlParser
 
-## Branch Guide
+C로 만든 작은 파일 기반 SQL 처리기입니다. `INSERT` 와 `SELECT` 문장을 읽어 `schema/` 와 `data/` 폴더의 파일을 기준으로 실행합니다.
 
-각 브랜치는 기능을 한 단계씩 쌓아 가는 학습용 단계입니다.
+이 프로젝트는 "SQL 문자열을 해석해서 CSV 파일을 작은 데이터베이스처럼 다루는 프로그램"으로 이해하면 가장 쉽습니다.
 
-- `step/01-foundation`
-  프로젝트의 최소 뼈대를 만듭니다. CLI 진입점, SQL 파일 읽기, 기본 빌드가 들어 있습니다.
-- `step/02-schema-storage`
-  스키마 파일과 CSV 저장소를 읽는 기반을 추가합니다. 테이블 메타 정보와 데이터 파일 형식을 다룹니다.
-- `step/03-parser`
-  SQL 문자열을 토큰으로 나누고, `INSERT` / `SELECT` 문을 AST로 해석합니다.
-- `step/04-execution`
-  파싱 결과를 실제 동작으로 연결합니다. `INSERT` 저장, `SELECT` 조회 같은 실행 로직이 들어갑니다.
-- `step/05-quality`
-  테스트, 예외 처리, 코드 품질 보강 같은 안정화 작업을 진행합니다.
-- `step/06-readme-demo`
-  README, 실행 예시, 데모 흐름처럼 프로젝트를 이해하고 보여주기 위한 마무리 작업을 정리합니다.
-- `main`
-  각 step 브랜치의 결과를 모아둔 최종 통합 브랜치입니다.
+## 한눈에 보는 흐름
 
-C 언어로 구현한 파일 기반 SQL 처리기입니다.  
-텍스트 파일로 전달된 SQL을 읽고, `INSERT` 와 `SELECT` 를 파싱한 뒤, CSV 파일 기반 테이블에 대해 실제 저장과 조회를 수행합니다.
+프로그램은 아래 순서로 동작합니다.
 
-## 핵심 문서
+`입력 -> lexer -> parser -> executor -> schema/storage -> 출력`
 
-- 구현 계획서 PDF: [docs/sql_processor_plan.pdf](./docs/sql_processor_plan.pdf)
-- 구현 계획서 HTML: [docs/sql_processor_plan.html](./docs/sql_processor_plan.html)
-- 상세 파일 가이드 원본: [docs/CODE_GUIDE.md](./docs/CODE_GUIDE.md)
+- 입력
+  SQL 파일 경로나 SQL 문장을 직접 받습니다.
+- lexer
+  SQL 문장을 토큰으로 잘게 나눕니다.
+- parser
+  토큰을 읽어 `INSERT` 또는 `SELECT` 구조로 해석합니다.
+- executor
+  해석된 결과를 실제 파일 동작으로 바꿉니다.
+- schema/storage
+  테이블 구조를 검사하고 CSV 파일을 읽거나 씁니다.
 
-## 현재 지원 기능
+![SqlParser function overview](./docs/sqlparser_function_overview.svg)
+
+## 지원 기능
 
 - `INSERT INTO table_name (col1, col2, ...) VALUES (val1, val2, ...);`
 - `SELECT * FROM table_name;`
 - `SELECT col1, col2 FROM table_name;`
+- SQL 파일 입력
+- SQL 문장 직접 입력
 
-현재 버전에서는 아래 기능은 제외했습니다.
+아직 지원하지 않는 기능:
 
 - `WHERE`
 - `JOIN`
@@ -42,191 +39,216 @@ C 언어로 구현한 파일 기반 SQL 처리기입니다.
 - `DELETE`
 - `CREATE TABLE`
 
-## 한눈에 보는 기능 구조
-
-아래 이미지는 이 프로젝트를 기능별로 나눠 보여주는 구조도입니다.  
-어느 파일이 입력을 받고, 어디서 SQL 을 해석하고, 어떤 모듈이 CSV 저장과 조회를 담당하는지 한눈에 볼 수 있습니다.
-
-![SqlParser function overview](./docs/sqlparser_function_overview.svg)
-
-핵심 흐름은 아래 한 줄로 요약할 수 있습니다.
-
-`SQL 파일 읽기 -> 토큰 분리 -> 문장 해석 -> 실행 -> CSV 저장/조회 -> 테스트 검증`
-
-## 처음 읽는 순서
-
-프로젝트를 처음 볼 때는 아래 순서로 읽으면 전체 구조를 빠르게 파악할 수 있습니다.
-
-1. `src/app/main.c`
-2. `src/sql/lexer.c`
-3. `src/sql/parser.c`
-4. `src/execution/executor.c`
-5. `src/storage/schema.c`
-6. `src/storage/storage.c`
-7. `tests/test_runner.c`
-
-이 순서대로 보면 `입력 -> 해석 -> 실행 -> 저장 -> 검증` 흐름이 자연스럽게 이어집니다.
-
-## 확장성을 고려한 디렉터리 구조
+## 프로젝트 구조
 
 ```txt
 .
-├── build/
-│   ├── bin/
-│   └── tests/
-├── data/
-├── docs/
-├── examples/
-├── include/
-│   └── sqlparser/
-│       ├── common/
-│       ├── execution/
-│       ├── sql/
-│       └── storage/
-├── schema/
-├── src/
-│   ├── app/
-│   ├── common/
-│   ├── execution/
-│   ├── sql/
-│   └── storage/
-├── tests/
-├── .gitignore
-└── Makefile
+|-- data/
+|-- docs/
+|-- examples/
+|-- include/
+|   `-- sqlparser/
+|       |-- common/
+|       |-- execution/
+|       |-- sql/
+|       `-- storage/
+|-- schema/
+|-- src/
+|   |-- app/
+|   |-- common/
+|   |-- execution/
+|   |-- sql/
+|   `-- storage/
+|-- tests/
+|-- Makefile
+`-- README.md
 ```
 
-### 구조를 이렇게 나눈 이유
+각 디렉터리 역할은 아래와 같습니다.
 
-- `include/sqlparser/...`
-  외부에서 읽는 공개 헤더를 역할별로 분리합니다.
 - `src/app`
-  프로그램 시작점과 CLI 진입점을 둡니다.
-- `src/sql`
-  SQL 해석 관련 코드만 모읍니다.
-- `src/storage`
-  파일 저장과 스키마 검증 코드를 모읍니다.
-- `src/execution`
-  파싱된 결과를 실제 동작으로 연결하는 실행기를 둡니다.
+  프로그램 시작점과 CLI 입력 처리를 담당합니다.
 - `src/common`
-  여러 모듈에서 공통으로 쓰는 유틸을 둡니다.
+  문자열, 파일, 리스트, 경로 생성 같은 공용 도구를 모아둡니다.
+- `src/sql`
+  SQL 토큰화, 문장 해석, AST 메모리 정리를 담당합니다.
+- `src/execution`
+  해석된 SQL을 실제 `INSERT` / `SELECT` 동작으로 연결합니다.
+- `src/storage`
+  스키마 검사와 CSV 읽기/쓰기를 담당합니다.
+- `include/sqlparser`
+  각 모듈의 공개 헤더 파일이 들어 있습니다.
+- `schema`
+  테이블 구조 설명 파일이 들어 있습니다.
+- `data`
+  실제 CSV 데이터가 저장됩니다.
+- `examples`
+  실행해볼 수 있는 예제 SQL 파일이 들어 있습니다.
 - `docs`
-  README 외 별도 설명 문서를 보관합니다.
-- `build`
-  실행 파일과 테스트 임시 파일을 분리해 작업 폴더를 깔끔하게 유지합니다.
+  설계 문서와 안내 문서가 들어 있습니다.
+- `tests`
+  자동 테스트 코드가 들어 있습니다.
 
-이렇게 나누면 앞으로 `WHERE`, `UPDATE`, 직접 SQL 입력 옵션, 로그 기능 같은 확장을 할 때 기존 구조를 크게 흔들지 않고 파일을 추가할 수 있습니다.
+## 처음 읽는 순서
 
-## 디렉터리와 파일별 역할
+코드를 처음 볼 때는 아래 순서가 가장 이해하기 쉽습니다.
+
+1. [src/app/main.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/app/main.c)
+2. [src/sql/lexer.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/sql/lexer.c)
+3. [src/sql/parser.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/sql/parser.c)
+4. [src/execution/executor.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/execution/executor.c)
+5. [src/storage/schema.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/storage/schema.c)
+6. [src/storage/storage.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/src/storage/storage.c)
+7. [tests/test_runner.c](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/tests/test_runner.c)
+
+이 순서대로 보면 "입력 -> 해석 -> 실행 -> 저장 -> 검증" 흐름이 자연스럽게 이어집니다.
+
+## 파일별 역할
 
 ### `src/app/main.c`
 
 프로그램의 시작점입니다.
 
-- 명령행 인자 확인
-- SQL 파일 또는 직접 입력한 SQL 문장 읽기
-- lexer 호출
-- parser 호출
-- executor 호출
-- 결과 출력
+- 명령줄 인자를 읽습니다.
+- SQL 파일 경로인지, 직접 입력한 SQL 문장인지 구분합니다.
+- `lex_sql()` 을 호출합니다.
+- `parse_statement()` 를 호출합니다.
+- `execute_statement()` 를 호출합니다.
+- 최종 결과 메시지를 출력합니다.
 
 즉, 전체 흐름을 연결하는 지휘자 역할입니다.
 
 ### `src/common/util.c`
 
-프로젝트 전체에서 공통으로 쓰는 기초 함수들을 모아 둔 파일입니다.
+공용 유틸리티 함수 모음입니다.
 
 - 파일 전체 읽기
 - 문자열 복사
 - 공백 제거
+- 줄 끝 개행 제거
 - 문자열 리스트 관리
 - 경로 문자열 생성
 
+여러 모듈이 함께 쓰는 기본 도구 상자라고 생각하면 됩니다.
+
 ### `src/sql/lexer.c`
 
-SQL 문자열을 토큰 단위로 나눕니다.
+SQL 문장을 토큰으로 나눕니다.
 
-- 식별자
-- 문자열
-- 숫자
-- 쉼표
-- 괄호
-- 세미콜론
+예를 들어:
 
-즉, 문장을 바로 이해하지 않고 먼저 읽기 쉬운 조각으로 자르는 단계입니다.
+```sql
+SELECT name, age FROM users;
+```
+
+는 대략 아래 같은 토큰으로 나뉩니다.
+
+- `SELECT`
+- `name`
+- `,`
+- `age`
+- `FROM`
+- `users`
+- `;`
+
+즉 긴 문장을 먼저 "읽기 쉬운 조각"으로 나누는 단계입니다.
 
 ### `src/sql/parser.c`
 
-토큰 목록을 읽어 실제 SQL 의미로 해석합니다.
+토큰 목록을 읽어서 SQL의 의미를 해석합니다.
 
-현재 지원:
+현재는 아래 두 종류를 해석합니다.
 
 - `INSERT`
 - `SELECT`
 
-하는 일:
-
-- 첫 키워드 확인
-- 테이블명 읽기
-- 컬럼 목록 읽기
-- 값 목록 읽기
-- 세미콜론 확인
-- 최종 `Statement` 생성
+parser가 해석한 결과는 AST 구조체로 정리됩니다.
 
 ### `src/sql/ast.c`
 
-파싱 결과 구조체의 메모리를 정리합니다.  
-역할은 작지만 중요합니다. 문자열과 리스트를 많이 만들기 때문에 마지막 정리가 필요합니다.
+parser가 만든 AST 안의 동적 메모리를 정리합니다.
+
+역할은 작아 보이지만 중요합니다. `table_name`, `columns`, `values` 같은 동적 메모리를 안전하게 해제해야 누수가 생기지 않습니다.
 
 ### `src/storage/schema.c`
 
-테이블이 정상적으로 존재하는지 검사합니다.
+테이블 구조가 정상인지 확인합니다.
 
-검사 항목:
+주요 검사 항목:
 
-- `schema/<table>.meta` 존재 여부
-- `data/<table>.csv` 존재 여부
-- CSV 헤더와 meta 파일 컬럼 순서 일치 여부
+- `schema/<table>.meta` 파일 존재 여부
+- `data/<table>.csv` 파일 존재 여부
+- 메타 파일 안의 `table`, `columns` 정보 존재 여부
+- CSV 헤더와 스키마 컬럼 순서 일치 여부
+
+즉 "이 테이블을 정말 읽거나 써도 되는 상태인가?"를 확인하는 문지기 역할입니다.
 
 ### `src/storage/storage.c`
 
-CSV 규칙을 실제로 처리합니다.
+CSV 파일을 실제로 다룹니다.
 
 - CSV 한 줄 파싱
-- CSV escape
-- CSV 파일 끝에 새 행 추가
+- CSV escape 처리
+- CSV 파일 끝에 행 추가
 
-예:
-
-- 원본: `hello, "world"`
-- 저장: `"hello, ""world"""`
+예를 들어 값 안에 쉼표나 큰따옴표가 들어가면 CSV 규칙에 맞게 감싸고 escape 합니다.
 
 ### `src/execution/executor.c`
 
-parser가 만든 `Statement` 를 실제 동작으로 바꾸는 핵심 파일입니다.
+parser가 만든 AST를 실제 동작으로 바꿉니다.
 
-두 갈래로 나뉩니다.
+- `INSERT`
+  스키마를 확인하고, 컬럼 순서에 맞는 한 행을 만들어 CSV에 추가합니다.
+- `SELECT`
+  CSV를 읽고, 요청한 컬럼만 골라 출력합니다.
 
-- `INSERT` 실행
-- `SELECT` 실행
-
-`INSERT` 는 스키마를 검증한 뒤 컬럼 순서를 맞춰 새 CSV 행을 만들고, `SELECT` 는 헤더를 기준으로 필요한 열만 골라 출력합니다.
+즉 해석된 SQL을 현실적인 파일 작업으로 연결하는 모듈입니다.
 
 ### `tests/test_runner.c`
 
-자동 테스트를 모아 둔 실행 파일입니다.
+자동 테스트 실행 파일입니다.
 
-주요 테스트:
+주요 검증 범위:
 
-- lexer 테스트
-- parser 테스트
-- schema 테스트
-- `INSERT` 실행 테스트
-- `SELECT` 실행 테스트
-- CSV escape 테스트
+- lexer 동작
+- parser 동작
+- schema 검사
+- `INSERT` 실행
+- `SELECT` 실행
+- CSV escape 처리
+
+## AST와 실행 흐름
+
+이 프로젝트에서 AST는 "SQL 해석 결과를 담는 중간 구조체"입니다.
+
+예를 들어:
+
+```sql
+INSERT INTO users (id, name, age) VALUES (1, 'kim', 20);
+```
+
+를 해석하면 대략 이런 정보가 만들어집니다.
+
+- 문장 종류: `INSERT`
+- 테이블 이름: `users`
+- 컬럼 목록: `id`, `name`, `age`
+- 값 목록: `1`, `kim`, `20`
+
+이 구조를 정의한 파일은 [include/sqlparser/sql/ast.h](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/include/sqlparser/sql/ast.h) 입니다.
+
+## 시퀀스 다이어그램
+
+세부 흐름을 그림으로 보고 싶다면 아래 다이어그램을 보면 됩니다.
+
+- 전체 실행 흐름: [docs/diagrams/code-guide-sequence-01-overall.svg](./docs/diagrams/code-guide-sequence-01-overall.svg)
+- SQL 파싱 흐름: [docs/diagrams/code-guide-sequence-02-parsing.svg](./docs/diagrams/code-guide-sequence-02-parsing.svg)
+- INSERT 실행 흐름: [docs/diagrams/code-guide-sequence-03-insert.svg](./docs/diagrams/code-guide-sequence-03-insert.svg)
+- SELECT 실행 흐름: [docs/diagrams/code-guide-sequence-04-select.svg](./docs/diagrams/code-guide-sequence-04-select.svg)
+- 테스트 실행 흐름: [docs/diagrams/code-guide-sequence-05-tests.svg](./docs/diagrams/code-guide-sequence-05-tests.svg)
 
 ## 테이블 존재 규칙
 
-테이블은 아래 두 파일이 모두 있을 때 존재하는 것으로 간주합니다.
+테이블은 아래 두 파일이 모두 있어야 존재하는 것으로 봅니다.
 
 - `schema/<table_name>.meta`
 - `data/<table_name>.csv`
@@ -238,54 +260,100 @@ table=users
 columns=id,name,age
 ```
 
+위 구조라면 CSV 파일의 첫 줄도 `id,name,age` 여야 합니다.
+
 ## CSV 규칙
 
-- 첫 줄은 헤더이며 컬럼 순서를 나타냅니다.
-- 헤더는 반드시 `meta` 파일의 컬럼 순서와 같아야 합니다.
-- 문자열에 쉼표나 큰따옴표가 포함되면 CSV 규칙에 따라 큰따옴표로 감쌉니다.
-- 문자열 내부 큰따옴표는 `""` 로 escape 합니다.
-- 빈 문자열은 `""` 로 저장합니다.
-- 1차 구현에서는 값 내부 줄바꿈은 허용하지 않습니다.
-- 부분 컬럼 `INSERT` 는 허용하며, 빠진 컬럼은 빈 문자열로 저장합니다.
+이 프로젝트는 CSV를 아래 규칙으로 다룹니다.
+
+- 첫 줄은 헤더입니다.
+- 헤더는 메타 파일의 컬럼 순서와 같아야 합니다.
+- 값 안에 쉼표가 있으면 큰따옴표로 감쌉니다.
+- 값 안의 큰따옴표는 `""` 로 escape 합니다.
+- 빈 값은 빈 문자열로 저장합니다.
+- 값 안의 줄바꿈은 현재 지원하지 않습니다.
+- 부분 컬럼 `INSERT` 를 허용하며, 빠진 컬럼은 빈 문자열로 채웁니다.
 
 ## 빌드 방법
 
-### 프로그램 빌드
+### Windows / PowerShell
+
+프로그램 빌드:
 
 ```powershell
 gcc -Wall -Wextra -std=c11 -Iinclude -o build/bin/sqlparser.exe src/app/main.c src/common/util.c src/storage/schema.c src/storage/storage.c src/sql/ast.c src/sql/lexer.c src/sql/parser.c src/execution/executor.c
 ```
 
-### 테스트 빌드
+테스트 빌드:
 
 ```powershell
 gcc -Wall -Wextra -std=c11 -Iinclude -o build/bin/test_runner.exe tests/test_runner.c src/common/util.c src/storage/schema.c src/storage/storage.c src/sql/ast.c src/sql/lexer.c src/sql/parser.c src/execution/executor.c
 ```
 
-### Makefile 사용
+Makefile 사용:
 
 ```powershell
 mingw32-make
 mingw32-make test
 ```
 
-환경에 따라 `mingw32-make` 가 내부 오류를 낼 수 있어서, 위의 `gcc` 직접 명령도 함께 제공합니다.
+### Dev Container / bash
+
+현재 `Makefile` 은 Windows 명령을 기준으로 작성되어 있어서 Dev Container bash에서는 직접 `gcc` 명령을 쓰는 편이 안전합니다.
+
+프로그램 빌드:
+
+```bash
+mkdir -p build/bin
+
+gcc -Wall -Wextra -std=c11 -Iinclude \
+  -o build/bin/sqlparser \
+  src/app/main.c \
+  src/common/util.c \
+  src/storage/schema.c \
+  src/storage/storage.c \
+  src/sql/ast.c \
+  src/sql/lexer.c \
+  src/sql/parser.c \
+  src/execution/executor.c
+```
+
+테스트 빌드:
+
+```bash
+mkdir -p build/bin
+
+gcc -Wall -Wextra -std=c11 -Iinclude \
+  -o build/bin/test_runner \
+  tests/test_runner.c \
+  src/common/util.c \
+  src/storage/schema.c \
+  src/storage/storage.c \
+  src/sql/ast.c \
+  src/sql/lexer.c \
+  src/sql/parser.c \
+  src/execution/executor.c
+```
 
 ## 실행 방법
 
-```powershell
-.\build\bin\sqlparser.exe <sql-file-path>
-```
+### SQL 파일 실행
 
-예시:
+Windows:
 
 ```powershell
-.\build\bin\sqlparser.exe .\examples\insert_users.sql
-.\build\bin\sqlparser.exe .\examples\select_name_age.sql
 .\build\bin\sqlparser.exe .\examples\select_all_users.sql
 ```
 
-SQL 문장을 직접 인자로 넘겨 실행할 수도 있습니다.
+bash:
+
+```bash
+./build/bin/sqlparser ./examples/select_all_users.sql
+```
+
+### SQL 문장 직접 실행
+
+Windows:
 
 ```powershell
 .\build\bin\sqlparser.exe "SELECT * FROM users;"
@@ -293,38 +361,51 @@ SQL 문장을 직접 인자로 넘겨 실행할 수도 있습니다.
 .\build\bin\sqlparser.exe "INSERT INTO users (id, name, age) VALUES (1, 'kim', 20);"
 ```
 
-인자를 여러 개로 나눠 넘기면 공백으로 다시 합쳐 하나의 SQL 문장으로 처리합니다.
+bash:
 
-```powershell
-.\build\bin\sqlparser.exe SELECT name, age FROM users;
+```bash
+./build/bin/sqlparser "SELECT * FROM users;"
+./build/bin/sqlparser "SELECT name, age FROM users;"
+./build/bin/sqlparser "INSERT INTO users (id, name, age) VALUES (1, 'kim', 20);"
 ```
 
-다만 `*` 문자는 셸이 먼저 해석할 수 있으므로 `SELECT *` 형태는 따옴표로 감싸서 실행하는 것이 안전합니다.
+여러 인자를 띄어 써도 내부에서 다시 하나의 SQL 문장으로 합쳐 처리합니다.
 
-## 테스트 방법
+```bash
+./build/bin/sqlparser SELECT name, age FROM users;
+```
+
+다만 `*` 는 셸이 먼저 해석할 수 있으므로 `SELECT *` 는 큰따옴표로 감싸는 것이 안전합니다.
+
+## 테스트 실행
+
+Windows:
 
 ```powershell
 .\build\bin\test_runner.exe
 ```
 
-검증한 주요 항목은 아래와 같습니다.
+bash:
 
-- lexer 가 SQL 문장을 올바르게 토큰화하는지
-- parser 가 `INSERT`, `SELECT` 를 올바르게 AST 로 변환하는지
-- 스키마 로딩과 CSV 헤더 검증이 맞는지
-- 부분 컬럼 `INSERT` 시 누락된 컬럼이 빈 문자열로 채워지는지
-- `SELECT` 결과가 CSV 파일 기준으로 올바르게 출력되는지
-- 쉼표와 큰따옴표가 포함된 문자열이 CSV 규칙대로 저장되는지
+```bash
+./build/bin/test_runner
+```
 
 ## 예제 SQL
 
-- [examples/insert_users.sql](./examples/insert_users.sql)
-- [examples/select_name_age.sql](./examples/select_name_age.sql)
-- [examples/select_all_users.sql](./examples/select_all_users.sql)
+- [examples/insert_users.sql](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/examples/insert_users.sql)
+- [examples/select_name_age.sql](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/examples/select_name_age.sql)
+- [examples/select_all_users.sql](/C:/Users/home/workspace/jungle/wedcoding/week6/sqlparser/.codex-main-pr/examples/select_all_users.sql)
+
+## 관련 문서
+
+- 구현 계획 PDF: [docs/sql_processor_plan.pdf](./docs/sql_processor_plan.pdf)
+- 구현 계획 HTML: [docs/sql_processor_plan.html](./docs/sql_processor_plan.html)
+- 초보자용 입문 문서: [docs/BEGINNER_GUIDE_KO.md](./docs/BEGINNER_GUIDE_KO.md)
 
 ## 단계별 브랜치
 
-학습과 리뷰를 위해 아래 누적형 브랜치를 운영합니다.
+학습 흐름을 위해 아래 단계별 브랜치를 운영합니다.
 
 - `step/01-foundation`
 - `step/02-schema-storage`
@@ -332,5 +413,6 @@ SQL 문장을 직접 인자로 넘겨 실행할 수도 있습니다.
 - `step/04-execution`
 - `step/05-quality`
 - `step/06-readme-demo`
+- `main`
 
-브랜치를 앞에서부터 보면 기능이 어떻게 쌓였는지 단계별로 따라갈 수 있습니다.
+`main` 은 각 단계 결과를 모은 최종 통합 브랜치입니다.
