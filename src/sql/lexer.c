@@ -13,6 +13,16 @@
 // memcpy를 쓰기 위해 포함한다.
 #include <string.h>
 
+static int is_identifier_start(unsigned char value) {
+    // ASCII 영문, 언더스코어, 숫자 외에도 UTF-8 바이트를 식별자 시작으로 허용한다.
+    return isalpha(value) || value == '_' || isdigit(value) || value >= 0x80;
+}
+
+static int is_identifier_continue(unsigned char value) {
+    // 식별자 중간 문자도 시작 문자와 같은 규칙으로 읽는다.
+    return isalnum(value) || value == '_' || value >= 0x80;
+}
+
 static int push_token(TokenArray *tokens, TokenType type, const char *text, int position) {
     // 배열이 부족할 때 새로 잡을 크기다.
     int new_capacity;
@@ -74,7 +84,7 @@ static int lex_word(const char *input, int *index, TokenArray *tokens) {
     int ok;
 
     // 영문자, 숫자, 언더스코어가 이어지는 동안 한 단어로 본다.
-    while (isalnum((unsigned char)input[*index]) || input[*index] == '_') {
+    while (is_identifier_continue((unsigned char)input[*index])) {
         (*index)++;
         length++;
     }
@@ -194,7 +204,7 @@ int lex_sql(const char *input, TokenArray *tokens, char *error, size_t error_siz
         }
 
         // 식별자나 숫자라면 단어 토큰으로 읽는다.
-        if (isalpha((unsigned char)current) || current == '_' || isdigit((unsigned char)current)) {
+        if (is_identifier_start((unsigned char)current)) {
             if (!lex_word(input, &index, tokens)) {
                 snprintf(error, error_size, "out of memory while lexing SQL");
                 return 0;

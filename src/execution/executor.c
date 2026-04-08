@@ -134,7 +134,7 @@ static ExecResult execute_insert(const InsertStatement *statement, const char *s
     }
 
     // 완성된 한 줄 값을 CSV 파일 끝에 추가한다.
-    storage_result = append_row_csv(data_dir, statement->table_name, &row_values);
+    storage_result = append_row_csv(data_dir, schema_result.schema.storage_name, &row_values);
     // 임시로 만든 메모리들은 여기서 모두 정리한다.
     free(assigned);
     string_list_free(&row_values);
@@ -270,7 +270,7 @@ static ExecResult execute_select(const SelectStatement *statement, const char *s
     print_header_row(out, &headers);
 
     // 실제 CSV 데이터 파일을 연다.
-    path = build_path(data_dir, statement->table_name, ".csv");
+    path = build_path(data_dir, schema_result.schema.storage_name, ".csv");
     if (path == NULL) {
         free(selected_indexes);
         string_list_free(&headers);

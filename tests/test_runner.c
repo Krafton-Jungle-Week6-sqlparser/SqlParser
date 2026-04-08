@@ -151,6 +151,25 @@ static void test_parser_select(void) {
     free_tokens(&tokens);
 }
 
+static void test_parser_utf8_identifiers(void) {
+    TokenArray tokens = {0};
+    ParseResult result;
+    char error[256];
+
+    // 한글 테이블명과 컬럼명도 식별자로 읽을 수 있어야 한다.
+    expect_true(lex_sql("SELECT 학과, 이름 FROM 학생;", &tokens, error, sizeof(error)), "lexer parses UTF-8 identifiers");
+    result = parse_statement(&tokens);
+    expect_true(result.ok, "parser accepts UTF-8 identifiers");
+    if (result.ok) {
+        expect_true(strcmp(result.statement.as.select_statement.table_name, "학생") == 0, "parser reads UTF-8 table name");
+        expect_true(result.statement.as.select_statement.columns.count == 2, "parser reads UTF-8 column count");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[0], "학과") == 0, "parser reads first UTF-8 column");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[1], "이름") == 0, "parser reads second UTF-8 column");
+        free_statement(&result.statement);
+    }
+    free_tokens(&tokens);
+}
+
 static void test_parser_error(void) {
     TokenArray tokens = {0};
     ParseResult result;
@@ -184,6 +203,29 @@ static void test_schema_loading(void) {
     result = load_schema(schema_dir, data_dir, "users");
     expect_true(result.ok, "load schema validates existing table");
     if (result.ok) {
+        free_schema(&result.schema);
+    }
+}
+
+static void test_schema_loading_with_alias_filename(void) {
+    char root[128];
+    char schema_dir[160];
+    char data_dir[160];
+    char schema_path[192];
+    char data_path[192];
+    SchemaResult result;
+
+    // 파일명과 table 값이 달라도 meta 안의 table 값으로 스키마를 찾을 수 있어야 한다.
+    expect_true(create_test_dirs(root, sizeof(root), schema_dir, sizeof(schema_dir), data_dir, sizeof(data_dir)), "create alias schema test directories");
+    build_child_path(schema_path, sizeof(schema_path), schema_dir, "student.meta");
+    build_child_path(data_path, sizeof(data_path), data_dir, "student.csv");
+    expect_true(write_text_file(schema_path, "table=학생\ncolumns=id,학과,학번,이름,나이\n"), "write alias schema meta");
+    expect_true(write_text_file(data_path, "id,학과,학번,이름,나이\n1,컴퓨터공학과,2024001,김민수,20\n"), "write alias schema CSV");
+
+    result = load_schema(schema_dir, data_dir, "학생");
+    expect_true(result.ok, "load schema resolves alias meta filename");
+    if (result.ok) {
+        expect_true(strcmp(result.schema.storage_name, "student") == 0, "load schema keeps alias storage name");
         free_schema(&result.schema);
     }
 }
@@ -306,9 +348,11 @@ int main(void) {
     // parser 관련 테스트들이다.
     test_parser_insert();
     test_parser_select();
+    test_parser_utf8_identifiers();
     test_parser_error();
     // schema, executor, CSV 저장 테스트들이다.
     test_schema_loading();
+    test_schema_loading_with_alias_filename();
     test_insert_execution_partial_columns();
     test_select_execution();
     test_csv_escape();

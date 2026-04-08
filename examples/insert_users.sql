@@ -1,2 +1,2 @@
-INSERT INTO users (id, name, age) VALUES (1, 'Alice', 20);
+INSERT INTO 학생 (id, 학과, 학번, 이름, 나이) VALUES (6, '소프트웨어학과', 2024006, '한지우', 21);
 

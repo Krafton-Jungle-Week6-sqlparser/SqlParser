@@ -8,6 +8,8 @@
 typedef struct {
     // 테이블 이름이다.
     char *table_name;
+    // 실제 meta/csv 파일명에 쓰는 기준 이름이다.
+    char *storage_name;
     // 컬럼 이름 목록이다.
     StringList columns;
 } Schema;
