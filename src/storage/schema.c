@@ -349,8 +349,9 @@ SchemaResult load_schema(const char *schema_dir, const char *data_dir, const cha
         return result;
     }
 
-    // meta 안의 table 값과 요청한 테이블명이 같은지 확인한다.
-    if (strcmp(result.schema.table_name, table_name) != 0) {
+    // SQL에서는 선언된 table 이름과 실제 파일 basename 둘 다 허용한다.
+    if (strcmp(result.schema.table_name, table_name) != 0 &&
+        strcmp(result.schema.storage_name, table_name) != 0) {
         free_schema(&result.schema);
         set_schema_error(&result, "schema table name does not match requested table");
         return result;

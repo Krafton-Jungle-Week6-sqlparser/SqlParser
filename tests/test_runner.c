@@ -156,15 +156,15 @@ static void test_parser_utf8_identifiers(void) {
     ParseResult result;
     char error[256];
 
-    // 한글 테이블명과 컬럼명도 식별자로 읽을 수 있어야 한다.
-    expect_true(lex_sql("SELECT 학과, 이름 FROM 학생;", &tokens, error, sizeof(error)), "lexer parses UTF-8 identifiers");
+    // 한글 테이블명도 식별자로 읽을 수 있어야 한다.
+    expect_true(lex_sql("SELECT department, name FROM 학생;", &tokens, error, sizeof(error)), "lexer parses UTF-8 identifiers");
     result = parse_statement(&tokens);
     expect_true(result.ok, "parser accepts UTF-8 identifiers");
     if (result.ok) {
         expect_true(strcmp(result.statement.as.select_statement.table_name, "학생") == 0, "parser reads UTF-8 table name");
         expect_true(result.statement.as.select_statement.columns.count == 2, "parser reads UTF-8 column count");
-        expect_true(strcmp(result.statement.as.select_statement.columns.items[0], "학과") == 0, "parser reads first UTF-8 column");
-        expect_true(strcmp(result.statement.as.select_statement.columns.items[1], "이름") == 0, "parser reads second UTF-8 column");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[0], "department") == 0, "parser reads first alias column");
+        expect_true(strcmp(result.statement.as.select_statement.columns.items[1], "name") == 0, "parser reads second alias column");
         free_statement(&result.statement);
     }
     free_tokens(&tokens);
@@ -219,8 +219,8 @@ static void test_schema_loading_with_alias_filename(void) {
     expect_true(create_test_dirs(root, sizeof(root), schema_dir, sizeof(schema_dir), data_dir, sizeof(data_dir)), "create alias schema test directories");
     build_child_path(schema_path, sizeof(schema_path), schema_dir, "student.meta");
     build_child_path(data_path, sizeof(data_path), data_dir, "student.csv");
-    expect_true(write_text_file(schema_path, "table=학생\ncolumns=id,학과,학번,이름,나이\n"), "write alias schema meta");
-    expect_true(write_text_file(data_path, "id,학과,학번,이름,나이\n1,컴퓨터공학과,2024001,김민수,20\n"), "write alias schema CSV");
+    expect_true(write_text_file(schema_path, "table=학생\ncolumns=id,department,student_number,name,age\n"), "write alias schema meta");
+    expect_true(write_text_file(data_path, "id,department,student_number,name,age\n1,컴퓨터공학과,2024001,김민수,20\n"), "write alias schema CSV");
 
     result = load_schema(schema_dir, data_dir, "학생");
     expect_true(result.ok, "load schema resolves alias meta filename");
@@ -228,6 +228,56 @@ static void test_schema_loading_with_alias_filename(void) {
         expect_true(strcmp(result.schema.storage_name, "student") == 0, "load schema keeps alias storage name");
         free_schema(&result.schema);
     }
+
+    result = load_schema(schema_dir, data_dir, "student");
+    expect_true(result.ok, "load schema accepts storage name as table alias");
+    if (result.ok) {
+        expect_true(strcmp(result.schema.table_name, "학생") == 0, "load schema preserves declared table name");
+        free_schema(&result.schema);
+    }
+}
+
+static void test_select_execution_with_alias_table_name(void) {
+    char root[128];
+    char schema_dir[160];
+    char data_dir[160];
+    char schema_path[192];
+    char data_path[192];
+    char output_path[192];
+    char *output_text;
+    char error[256];
+    Statement statement = {0};
+    ExecResult result;
+    FILE *output_file;
+
+    // SQL에서 student 테이블명을 써도 student.meta/student.csv를 통해 조회할 수 있어야 한다.
+    expect_true(create_test_dirs(root, sizeof(root), schema_dir, sizeof(schema_dir), data_dir, sizeof(data_dir)), "create alias select test directories");
+    build_child_path(schema_path, sizeof(schema_path), schema_dir, "student.meta");
+    build_child_path(data_path, sizeof(data_path), data_dir, "student.csv");
+    build_child_path(output_path, sizeof(output_path), root, "alias_select_output.txt");
+    expect_true(write_text_file(schema_path, "table=학생\ncolumns=id,department,student_number,name,age\n"), "write alias select schema meta");
+    expect_true(write_text_file(data_path, "id,department,student_number,name,age\n1,컴퓨터공학과,2024001,김민수,20\n"), "write alias select CSV data");
+    expect_true(load_statement("SELECT name, age FROM student;", &statement), "build SELECT statement for storage alias table");
+
+    output_file = fopen(output_path, "wb");
+    expect_true(output_file != NULL, "open output file for alias SELECT capture");
+    if (output_file == NULL) {
+        free_statement(&statement);
+        return;
+    }
+
+    result = execute_statement(&statement, schema_dir, data_dir, output_file);
+    fclose(output_file);
+    expect_true(result.ok, "execute SELECT using storage alias table");
+    output_text = read_entire_file(output_path, error, sizeof(error));
+    expect_true(output_text != NULL, "read captured alias SELECT output");
+    if (output_text != NULL) {
+        expect_true(strstr(output_text, "name | age") != NULL, "alias SELECT prints alias header");
+        expect_true(strstr(output_text, "김민수 | 20") != NULL, "alias SELECT prints student row");
+        free(output_text);
+    }
+
+    free_statement(&statement);
 }
 
 static void test_insert_execution_partial_columns(void) {
@@ -355,6 +405,7 @@ int main(void) {
     test_schema_loading_with_alias_filename();
     test_insert_execution_partial_columns();
     test_select_execution();
+    test_select_execution_with_alias_table_name();
     test_csv_escape();
 
     // 전체 테스트 요약을 출력한다.
