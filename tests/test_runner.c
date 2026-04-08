@@ -207,6 +207,29 @@ static void test_schema_loading(void) {
     }
 }
 
+static void test_schema_loading_with_alias_filename(void) {
+    char root[128];
+    char schema_dir[160];
+    char data_dir[160];
+    char schema_path[192];
+    char data_path[192];
+    SchemaResult result;
+
+    // 파일명과 table 값이 달라도 meta 안의 table 값으로 스키마를 찾을 수 있어야 한다.
+    expect_true(create_test_dirs(root, sizeof(root), schema_dir, sizeof(schema_dir), data_dir, sizeof(data_dir)), "create alias schema test directories");
+    build_child_path(schema_path, sizeof(schema_path), schema_dir, "student.meta");
+    build_child_path(data_path, sizeof(data_path), data_dir, "student.csv");
+    expect_true(write_text_file(schema_path, "table=학생\ncolumns=id,학과,학번,이름,나이\n"), "write alias schema meta");
+    expect_true(write_text_file(data_path, "id,학과,학번,이름,나이\n1,컴퓨터공학과,2024001,김민수,20\n"), "write alias schema CSV");
+
+    result = load_schema(schema_dir, data_dir, "학생");
+    expect_true(result.ok, "load schema resolves alias meta filename");
+    if (result.ok) {
+        expect_true(strcmp(result.schema.storage_name, "student") == 0, "load schema keeps alias storage name");
+        free_schema(&result.schema);
+    }
+}
+
 static void test_insert_execution_partial_columns(void) {
     char root[128];
     char schema_dir[160];
@@ -329,6 +352,7 @@ int main(void) {
     test_parser_error();
     // schema, executor, CSV 저장 테스트들이다.
     test_schema_loading();
+    test_schema_loading_with_alias_filename();
     test_insert_execution_partial_columns();
     test_select_execution();
     test_csv_escape();

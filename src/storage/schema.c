@@ -4,6 +4,8 @@
 // CSV 한 줄을 컬럼 목록으로 파싱하기 위해 사용한다.
 #include "sqlparser/storage/storage.h"
 
+// 스키마 디렉터리 안의 meta 파일을 탐색하기 위해 포함한다.
+#include <dirent.h>
 // 파일 읽기와 메시지 생성을 위해 포함한다.
 #include <stdio.h>
 // free 함수를 쓰기 위해 포함한다.
@@ -34,8 +36,161 @@ static int parse_columns_value(const char *value, StringList *columns, char *mes
     return 1;
 }
 
-static int validate_csv_header(const char *data_dir, const char *table_name, const Schema *schema, char *message, size_t message_size) {
-    // data/<table>.csv 경로다.
+static char *extract_storage_name(const char *path) {
+    // 마지막 디렉터리 구분자 위치다.
+    const char *filename = strrchr(path, '/');
+    // 파일명 끝 길이다.
+    size_t length;
+    // 확장자를 제거한 저장용 이름이다.
+    char *name;
+
+    if (filename == NULL) {
+        filename = path;
+    } else {
+        filename++;
+    }
+
+    length = strlen(filename);
+    if (length >= 5 && strcmp(filename + length - 5, ".meta") == 0) {
+        length -= 5;
+    }
+
+    name = (char *)malloc(length + 1);
+    if (name == NULL) {
+        return NULL;
+    }
+
+    memcpy(name, filename, length);
+    name[length] = '\0';
+    return name;
+}
+
+static char *build_child_file_path(const char *dir, const char *filename) {
+    // "dir/filename" 전체 길이를 계산한다.
+    size_t length = strlen(dir) + strlen(filename) + 2;
+    // 완성될 경로 문자열 버퍼다.
+    char *path = (char *)malloc(length);
+
+    if (path == NULL) {
+        return NULL;
+    }
+
+    snprintf(path, length, "%s/%s", dir, filename);
+    return path;
+}
+
+static int has_meta_extension(const char *filename) {
+    // 파일명 길이를 구한다.
+    size_t length = strlen(filename);
+
+    // ".meta" 보다 짧으면 meta 파일이 아니다.
+    if (length < 5) {
+        return 0;
+    }
+
+    return strcmp(filename + length - 5, ".meta") == 0;
+}
+
+static int file_declares_table(const char *path, const char *table_name) {
+    // meta 파일을 읽을 핸들이다.
+    FILE *file;
+    // 한 줄씩 읽을 버퍼다.
+    char line[4096];
+    // 앞뒤 공백을 제거한 문자열이다.
+    char *trimmed;
+    // key=value 구분 위치다.
+    char *separator;
+    // 일치 여부를 담는 플래그다.
+    int matches = 0;
+
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        return 0;
+    }
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        strip_line_endings(line);
+        trimmed = trim_whitespace(line);
+        if (*trimmed == '\0') {
+            continue;
+        }
+
+        separator = strchr(trimmed, '=');
+        if (separator == NULL) {
+            continue;
+        }
+
+        *separator = '\0';
+        separator++;
+        separator = trim_whitespace(separator);
+
+        if (strcmp(trimmed, "table") == 0 && strcmp(separator, table_name) == 0) {
+            matches = 1;
+            break;
+        }
+    }
+
+    fclose(file);
+    return matches;
+}
+
+static char *find_schema_path(const char *schema_dir, const char *table_name, char *message, size_t message_size) {
+    // 요청한 테이블명 기준 기본 meta 경로다.
+    char *path = build_path(schema_dir, table_name, ".meta");
+    // 기본 경로를 여는 파일 핸들이다.
+    FILE *file;
+    // 디렉터리 순회 핸들이다.
+    DIR *directory;
+    // 각 엔트리를 담는 포인터다.
+    struct dirent *entry;
+
+    if (path == NULL) {
+        snprintf(message, message_size, "out of memory while building schema path");
+        return NULL;
+    }
+
+    file = fopen(path, "rb");
+    if (file != NULL) {
+        fclose(file);
+        return path;
+    }
+    free(path);
+
+    directory = opendir(schema_dir);
+    if (directory == NULL) {
+        snprintf(message, message_size, "schema meta file does not exist");
+        return NULL;
+    }
+
+    while ((entry = readdir(directory)) != NULL) {
+        char *candidate_path;
+
+        if (!has_meta_extension(entry->d_name)) {
+            continue;
+        }
+
+        candidate_path = build_child_file_path(schema_dir, entry->d_name);
+        if (candidate_path == NULL) {
+            closedir(directory);
+            snprintf(message, message_size, "out of memory while building schema path");
+            return NULL;
+        }
+
+        if (file_declares_table(candidate_path, table_name)) {
+            closedir(directory);
+            return candidate_path;
+        }
+
+        free(candidate_path);
+    }
+
+    closedir(directory);
+    snprintf(message, message_size, "schema meta file does not exist");
+    return NULL;
+}
+
+static int validate_csv_header(const char *data_dir, const char *storage_name, const Schema *schema, char *message, size_t message_size) {
+    // data/<storage>.csv 경로다.
     char *path;
     // CSV 파일 핸들이다.
     FILE *file;
@@ -47,7 +202,7 @@ static int validate_csv_header(const char *data_dir, const char *table_name, con
     int index;
 
     // data 디렉터리 기준 CSV 경로를 만든다.
-    path = build_path(data_dir, table_name, ".csv");
+    path = build_path(data_dir, storage_name, ".csv");
     if (path == NULL) {
         snprintf(message, message_size, "out of memory while building CSV path");
         return 0;
@@ -103,7 +258,7 @@ static int validate_csv_header(const char *data_dir, const char *table_name, con
 SchemaResult load_schema(const char *schema_dir, const char *data_dir, const char *table_name) {
     // 반환할 최종 결과 구조체다.
     SchemaResult result = {0};
-    // schema/<table>.meta 경로 문자열이다.
+    // 실제로 읽을 schema meta 경로 문자열이다.
     char *path;
     // meta 파일 핸들이다.
     FILE *file;
@@ -115,9 +270,17 @@ SchemaResult load_schema(const char *schema_dir, const char *data_dir, const cha
     char *separator;
 
     // meta 파일 경로를 만든다.
-    path = build_path(schema_dir, table_name, ".meta");
+    path = find_schema_path(schema_dir, table_name, result.message, sizeof(result.message));
     if (path == NULL) {
-        set_schema_error(&result, "out of memory while building schema path");
+        result.ok = 0;
+        return result;
+    }
+
+    // meta 파일명을 기준으로 실제 data 파일 basename도 함께 기억한다.
+    result.schema.storage_name = extract_storage_name(path);
+    if (result.schema.storage_name == NULL) {
+        free(path);
+        set_schema_error(&result, "out of memory while reading schema storage name");
         return result;
     }
 
@@ -180,7 +343,7 @@ SchemaResult load_schema(const char *schema_dir, const char *data_dir, const cha
     fclose(file);
 
     // 테이블명이나 컬럼 목록이 빠져 있으면 잘못된 meta 파일이다.
-    if (result.schema.table_name == NULL || result.schema.columns.count == 0) {
+    if (result.schema.table_name == NULL || result.schema.storage_name == NULL || result.schema.columns.count == 0) {
         free_schema(&result.schema);
         set_schema_error(&result, "schema meta file is missing required fields");
         return result;
@@ -194,7 +357,7 @@ SchemaResult load_schema(const char *schema_dir, const char *data_dir, const cha
     }
 
     // 같은 이름의 CSV 파일 헤더도 스키마와 맞는지 검증한다.
-    if (!validate_csv_header(data_dir, table_name, &result.schema, result.message, sizeof(result.message))) {
+    if (!validate_csv_header(data_dir, result.schema.storage_name, &result.schema, result.message, sizeof(result.message))) {
         free_schema(&result.schema);
         result.ok = 0;
         return result;
@@ -209,6 +372,9 @@ void free_schema(Schema *schema) {
     // 테이블 이름 문자열을 해제한다.
     free(schema->table_name);
     schema->table_name = NULL;
+    // 실제 파일명 기준 이름도 해제한다.
+    free(schema->storage_name);
+    schema->storage_name = NULL;
     // 컬럼 목록 문자열들도 해제한다.
     string_list_free(&schema->columns);
 }
