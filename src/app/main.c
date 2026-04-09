@@ -17,23 +17,12 @@
 // strlen, memcpy 같은 문자열 함수를 사용합니다.
 #include <string.h>
 
-#ifdef _WIN32
-#include <io.h>
 #ifdef _MSC_VER
+#include <io.h>
 #define ISATTY _isatty
-#define FILENO _fileno
-#else
-#define ISATTY isatty
-#define FILENO fileno
-#endif
 #else
 #include <unistd.h>
 #define ISATTY isatty
-#define FILENO fileno
-#endif
-
-#if defined(_WIN32) && !defined(_MSC_VER)
-int fileno(FILE *stream);
 #endif
 
 // 전달받은 인자가 실제 파일 경로인지 간단히 검사합니다.
@@ -55,7 +44,11 @@ static int file_exists(const char *path) {
 
 // 표준입력이 터미널에 연결된 대화형 환경인지 확인합니다.
 static int stdin_is_interactive(void) {
-    return ISATTY(FILENO(stdin)) != 0;
+#ifdef _MSC_VER
+    return ISATTY(_fileno(stdin)) != 0;
+#else
+    return ISATTY(STDIN_FILENO) != 0;
+#endif
 }
 
 // 공백만 있는 문자열인지 검사합니다.
