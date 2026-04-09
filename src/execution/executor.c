@@ -192,6 +192,28 @@ static int build_select_indexes(const SelectStatement *statement, const Schema *
     return statement->columns.count;
 }
 
+static int resolve_where_index(const SelectStatement *statement, const Schema *schema, int *where_index, char *message, size_t message_size) {
+    if (!statement->has_where) {
+        *where_index = -1;
+        return 1;
+    }
+
+    *where_index = string_list_index_of(&schema->columns, statement->where_column);
+    if (*where_index < 0) {
+        snprintf(message, message_size, "unknown column in WHERE: %s", statement->where_column);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int row_matches_where(const SelectStatement *statement, const StringList *fields, int where_index) {
+    if (!statement->has_where) {
+        return 1;
+    }
+
+    return strcmp(fields->items[where_index], statement->where_value) == 0;
+}
 static void print_selected_row(FILE *out, const StringList *fields, const int *selected_indexes, int selected_count) {
     // 출력할 열 순회용 인덱스다.
     int index;
@@ -239,6 +261,8 @@ static ExecResult execute_select(const SelectStatement *statement, const char *s
     int *selected_indexes = NULL;
     // 출력할 열 개수다.
     int selected_count;
+    // WHERE 비교 대상 컬럼 인덱스다.
+    int where_index = -1;
     // 실제로 읽어 출력한 데이터 행 수다.
     int row_count = 0;
 
@@ -260,6 +284,13 @@ static ExecResult execute_select(const SelectStatement *statement, const char *s
     // SELECT * 또는 특정 컬럼 조회에 맞게 출력 열 구성을 만든다.
     selected_count = build_select_indexes(statement, &schema_result.schema, &headers, selected_indexes, result.message, sizeof(result.message));
     if (selected_count == 0) {
+        free(selected_indexes);
+        string_list_free(&headers);
+        free_schema(&schema_result.schema);
+        return result;
+    }
+
+    if (!resolve_where_index(statement, &schema_result.schema, &where_index, result.message, sizeof(result.message))) {
         free(selected_indexes);
         string_list_free(&headers);
         free_schema(&schema_result.schema);
@@ -328,6 +359,11 @@ static ExecResult execute_select(const SelectStatement *statement, const char *s
             free_schema(&schema_result.schema);
             set_exec_error(&result, "CSV row does not match schema column count");
             return result;
+        }
+
+        if (!row_matches_where(statement, &fields, where_index)) {
+            string_list_free(&fields);
+            continue;
         }
 
         // 선택된 컬럼만 화면에 출력한다.

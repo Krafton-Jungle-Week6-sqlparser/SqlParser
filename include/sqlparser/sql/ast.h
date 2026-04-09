@@ -28,6 +28,12 @@ typedef struct {
     StringList columns;
     // 1이면 SELECT * 이고, 0이면 특정 컬럼 조회다.
     int select_all;
+    // 1이면 WHERE 절이 포함된 SELECT다.
+    int has_where;
+    // WHERE 절에서 비교할 컬럼명이다.
+    char *where_column;
+    // WHERE 절에서 비교할 값이다.
+    char *where_value;
 } SelectStatement;
 
 // 파싱 결과를 하나의 공통 타입으로 다루기 위한 구조체다.
