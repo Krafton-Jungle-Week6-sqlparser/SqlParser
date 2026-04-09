@@ -151,6 +151,22 @@ static void test_parser_select(void) {
     free_tokens(&tokens);
 }
 
+static void test_parser_where(void) {
+    TokenArray tokens = {0};
+    ParseResult result;
+    char error[256];
+
+    expect_true(lex_sql("SELECT name FROM users WHERE age = 20;", &tokens, error, sizeof(error)), "lexer parses SELECT with WHERE");
+    result = parse_statement(&tokens);
+    expect_true(result.ok, "parser accepts WHERE clause");
+    if (result.ok) {
+        expect_true(result.statement.as.select_statement.has_where == 1, "parser marks WHERE flag");
+        expect_true(strcmp(result.statement.as.select_statement.where_column, "age") == 0, "parser reads WHERE column");
+        expect_true(strcmp(result.statement.as.select_statement.where_value, "20") == 0, "parser reads WHERE value");
+        free_statement(&result.statement);
+    }
+    free_tokens(&tokens);
+}
 static void test_parser_utf8_identifiers(void) {
     TokenArray tokens = {0};
     ParseResult result;
@@ -364,6 +380,50 @@ static void test_select_execution(void) {
     free_statement(&statement);
 }
 
+static void test_select_execution_with_where(void) {
+    char root[128];
+    char schema_dir[160];
+    char data_dir[160];
+    char schema_path[192];
+    char data_path[192];
+    char output_path[192];
+    char *output_text;
+    char error[256];
+    Statement statement = {0};
+    ExecResult result;
+    FILE *output_file;
+
+    expect_true(create_test_dirs(root, sizeof(root), schema_dir, sizeof(schema_dir), data_dir, sizeof(data_dir)), "create WHERE select test directories");
+    build_child_path(schema_path, sizeof(schema_path), schema_dir, "users.meta");
+    build_child_path(data_path, sizeof(data_path), data_dir, "users.csv");
+    build_child_path(output_path, sizeof(output_path), root, "select_where_output.txt");
+    expect_true(write_text_file(schema_path, "table=users\ncolumns=id,name,age\n"), "write WHERE select schema meta");
+    expect_true(write_text_file(data_path, "id,name,age\n1,Alice,20\n2,Bob,21\n3,Carol,20\n"), "write WHERE select CSV data");
+    expect_true(load_statement("SELECT name FROM users WHERE age = 20;", &statement), "build SELECT WHERE statement for executor");
+
+    output_file = fopen(output_path, "wb");
+    expect_true(output_file != NULL, "open output file for SELECT WHERE capture");
+    if (output_file == NULL) {
+        free_statement(&statement);
+        return;
+    }
+
+    result = execute_statement(&statement, schema_dir, data_dir, output_file);
+    fclose(output_file);
+    expect_true(result.ok, "execute SELECT with WHERE from CSV");
+    expect_true(result.affected_rows == 2, "SELECT WHERE counts matching rows");
+    output_text = read_entire_file(output_path, error, sizeof(error));
+    expect_true(output_text != NULL, "read captured SELECT WHERE output");
+    if (output_text != NULL) {
+        expect_true(strstr(output_text, "name") != NULL, "SELECT WHERE prints header");
+        expect_true(strstr(output_text, "Alice") != NULL, "SELECT WHERE prints first matching row");
+        expect_true(strstr(output_text, "Carol") != NULL, "SELECT WHERE prints second matching row");
+        expect_true(strstr(output_text, "Bob") == NULL, "SELECT WHERE excludes non-matching row");
+        free(output_text);
+    }
+
+    free_statement(&statement);
+}
 static void test_csv_escape(void) {
     // CSV escape 테스트용 한 줄 데이터다.
     StringList row = {0};
@@ -398,6 +458,7 @@ int main(void) {
     // parser 관련 테스트들이다.
     test_parser_insert();
     test_parser_select();
+    test_parser_where();
     test_parser_utf8_identifiers();
     test_parser_error();
     // schema, executor, CSV 저장 테스트들이다.
@@ -405,6 +466,7 @@ int main(void) {
     test_schema_loading_with_alias_filename();
     test_insert_execution_partial_columns();
     test_select_execution();
+    test_select_execution_with_where();
     test_select_execution_with_alias_table_name();
     test_csv_escape();
 

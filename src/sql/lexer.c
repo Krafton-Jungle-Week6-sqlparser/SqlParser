@@ -230,6 +230,16 @@ int lex_sql(const char *input, TokenArray *tokens, char *error, size_t error_siz
             continue;
         }
 
+        // = 은 WHERE 비교 연산자 토큰이다.
+        if (current == '=') {
+            if (!push_simple_token(tokens, TOKEN_EQUALS, current, index)) {
+                snprintf(error, error_size, "out of memory while lexing SQL");
+                return 0;
+            }
+            index++;
+            continue;
+        }
+
         // , 는 컬럼/값 구분 토큰이다.
         if (current == ',') {
             if (!push_simple_token(tokens, TOKEN_COMMA, current, index)) {
