@@ -19,6 +19,10 @@ void free_statement(Statement *statement) {
     } else if (statement->type == STATEMENT_SELECT) {
         free(statement->as.select_statement.table_name);
         statement->as.select_statement.table_name = NULL;
+        free(statement->as.select_statement.where_column);
+        statement->as.select_statement.where_column = NULL;
+        free(statement->as.select_statement.where_value);
+        statement->as.select_statement.where_value = NULL;
         string_list_free(&statement->as.select_statement.columns);
     }
 }

@@ -10,6 +10,7 @@ typedef enum {
     TOKEN_STRING,
     TOKEN_NUMBER,
     TOKEN_STAR,
+    TOKEN_EQUALS,
     TOKEN_COMMA,
     TOKEN_LPAREN,
     TOKEN_RPAREN,

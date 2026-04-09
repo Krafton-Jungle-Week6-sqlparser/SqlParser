@@ -154,6 +154,23 @@ static int parse_value_list(ParserState *state, StringList *list) {
     return 1;
 }
 
+static int parse_condition_value(ParserState *state, char **value) {
+    const Token *token = current_token(state);
+
+    if (token->type != TOKEN_STRING && token->type != TOKEN_NUMBER && token->type != TOKEN_IDENTIFIER) {
+        snprintf(state->result->message, sizeof(state->result->message), "expected SQL value in WHERE clause");
+        return 0;
+    }
+
+    *value = copy_string(token->text);
+    if (*value == NULL) {
+        snprintf(state->result->message, sizeof(state->result->message), "out of memory while reading WHERE value");
+        return 0;
+    }
+
+    state->index++;
+    return 1;
+}
 static int parse_insert(ParserState *state, Statement *statement) {
     // union 안의 INSERT 전용 영역을 읽기 쉽게 별칭으로 잡는다.
     InsertStatement *insert_statement = &statement->as.insert_statement;
@@ -226,6 +243,24 @@ static int parse_select(ParserState *state, Statement *statement) {
 
     if (!parse_identifier(state, &select_statement->table_name)) {
         return 0;
+    }
+
+    if (current_token(state)->type == TOKEN_IDENTIFIER && strings_equal_ignore_case(current_token(state)->text, "WHERE")) {
+        state->index++;
+
+        if (!parse_identifier(state, &select_statement->where_column)) {
+            return 0;
+        }
+
+        if (!expect_type(state, TOKEN_EQUALS, "expected '=' in WHERE clause")) {
+            return 0;
+        }
+
+        if (!parse_condition_value(state, &select_statement->where_value)) {
+            return 0;
+        }
+
+        select_statement->has_where = 1;
     }
 
     // SELECT ... FROM table 형태를 모두 읽었으니 성공이다.
